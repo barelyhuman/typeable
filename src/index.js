@@ -1,4 +1,5 @@
-import { Project, ScriptTarget, SourceFile } from 'ts-morph'
+import { promises as fs } from 'fs'
+import { CodeWriter } from './writer'
 
 /**
  * @typedef {object} Options
@@ -11,6 +12,7 @@ let queueRunning = false
 
 function addToQueue(fn) {
   q.push(fn)
+  processQueue()
 }
 
 async function processQueue() {
@@ -38,12 +40,7 @@ class Typeable {
   }
 
   /**
-   * @type {Project}
-   */
-  tsProject
-
-  /**
-   * @type {SourceFile}
+   * @type {CodeWriter}
    */
   sourceFile
 
@@ -55,25 +52,14 @@ class Typeable {
   constructor(baseObject, options) {
     this.baseObject = baseObject
     Object.assign(this.options, options)
-    this.tsProject = new Project({
-      compilerOptions: {
-        skipLibCheck: true,
-        emitDeclarationOnly: true,
-        target: ScriptTarget.ES2015,
-      },
-    })
-
     this.setupSource()
+    addToQueue(() => {
+      return this.syncFile()
+    })
   }
 
   setupSource() {
-    this.sourceFile = this.tsProject.createSourceFile(
-      this.options.outfile,
-      '',
-      {
-        overwrite: true,
-      }
-    )
+    this.sourceFile = new CodeWriter()
 
     this.sourceFile.addInterface({
       name: this.options.rootInterfaceName,
@@ -95,8 +81,6 @@ class Typeable {
         addToQueue(() => {
           return self.contructTypeTree()
         })
-
-        processQueue()
 
         return true
       },
@@ -156,8 +140,7 @@ class Typeable {
   }
 
   async syncFile() {
-    this.sourceFile.formatText()
-    await this.sourceFile.save()
+    await fs.writeFile(this.options.outfile, this.sourceFile.print(), 'utf8')
   }
 
   get mutable() {
