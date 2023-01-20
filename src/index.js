@@ -6,8 +6,27 @@ import { Project, ScriptTarget, SourceFile } from 'ts-morph'
  * @property {string} rootInterfaceName
  */
 
+const q = []
+let queueRunning = false
+
+function addToQueue(fn) {
+  q.push(fn)
+}
+
+async function processQueue() {
+  if (queueRunning) {
+    return setTimeout(() => {
+      processQueue()
+    }, 100)
+  }
+  queueRunning = true
+  await q.reduce((acc, item) => {
+    return acc.then(_ => item())
+  }, Promise.resolve())
+  queueRunning = false
+}
+
 class Typeable {
-  currentProcessorTask = () => Promise.resolve()
   baseObject = {}
 
   /**
@@ -45,9 +64,6 @@ class Typeable {
     })
 
     this.setupSource()
-    if (process.env.NODE_ENV !== 'production') {
-      this.runProcessor()
-    }
   }
 
   setupSource() {
@@ -65,21 +81,6 @@ class Typeable {
     })
   }
 
-  runProcessor() {
-    // add it to the next tick instead
-    setTimeout(() => {
-      ;(async () => {
-        try {
-          await this.currentProcessorTask
-          await this.sourceFile.save()
-          this.runProcessor()
-        } catch (err) {
-          console.error(err)
-        }
-      })()
-    }, 100)
-  }
-
   proxyHandler() {
     const self = this
     return {
@@ -90,7 +91,12 @@ class Typeable {
           Reflect.set(...arguments)
         }
 
-        self.setCurrentTreeBuilder(async () => await self.contructTypeTree())
+        // add to queue
+        addToQueue(() => {
+          return self.contructTypeTree()
+        })
+
+        processQueue()
 
         return true
       },
@@ -146,15 +152,16 @@ class Typeable {
           })
       }
     })
+    await this.syncFile()
+  }
+
+  async syncFile() {
+    this.sourceFile.formatText()
+    await this.sourceFile.save()
   }
 
   get mutable() {
     return new Proxy(this.baseObject, this.proxyHandler())
-  }
-
-  setCurrentTreeBuilder(fn) {
-    if (process.env.NODE_ENV == 'production') return
-    this.currentProcessorTask = Promise.resolve().then(_ => fn())
   }
 }
 

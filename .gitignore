@@ -1,3 +1,6 @@
 /node_modules
 /dist
 .pnpm-debug.log
+
+# ignore test generated file
+test_typeable.d.ts
