@@ -1,66 +1,50 @@
-export class CodeWriter {
-  interfaces = []
-
-  constructor() {}
-
-  addInterface(props) {
-    const int = new CodeWriterInterface(props)
-    this.interfaces.push(int)
-    return int
-  }
-
-  getInterface(name) {
-    return this.interfaces.find(x => x.name == name)
-  }
-
-  print() {
-    return this.interfaces.map(x => x.print())
+export const createCodeWriter = () => {
+  const interfaces = []
+  return {
+    addInterface: props => {
+      const int = createInterface(props.name, props.isExported)
+      interfaces.push(int)
+      return int
+    },
+    getInterface: name => {
+      return interfaces.find(x => x.name == name)
+    },
+    print: () => {
+      return interfaces.map(x => x.print())
+    },
   }
 }
 
-class CodeWriterInterface {
-  name = ''
-  isExported = false
-  properties = []
-
-  constructor(options) {
-    this.name = options.name
-    this.isExported = options.isExported
-    this.properties = []
-  }
-
-  /**
-   *
-   * @param {object} props
-   * @param {string} props.name
-   * @param {string} props.type
-   */
-  addProperty(props) {
-    const prop = new CodeWriterInterfaceProperty(props)
-    this.properties.push(prop)
-    return prop
-  }
-
-  getProperty(name) {
-    return this.properties.find(x => x.name == name)
-  }
-
-  print() {
-    return `\n${this.isExported ? 'export ' : ''}interface ${
-      this.name
-    } {\n\t${this.properties.map(x => x.print()).join('\n\t')}\n}\n`
+export const createInterface = (name, isExported) => {
+  const properties = []
+  return {
+    name,
+    isExported,
+    getProperty: name => {
+      return properties.find(x => x.name == name)
+    },
+    addProperty: props => {
+      const property = properties.push(
+        createInterfaceProperty(props.name, props.type)
+      )
+      return property
+    },
+    print: () => {
+      return `\n${
+        isExported ? 'export ' : ''
+      }interface ${name} {\n\t${properties
+        .map(x => x.print())
+        .join('\n\t')}\n}\n`
+    },
   }
 }
 
-class CodeWriterInterfaceProperty {
-  name
-  type
-  constructor(options) {
-    this.name = options.name
-    this.type = options.type
-  }
-
-  print() {
-    return `${this.name}: ${this.type || 'undefined'}`
+const createInterfaceProperty = (name, type) => {
+  return {
+    name,
+    type,
+    print: () => {
+      return `${name}: ${type || 'undefined'}`
+    },
   }
 }

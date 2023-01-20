@@ -1,5 +1,6 @@
 import { promises as fs } from 'fs'
-import { CodeWriter } from './writer'
+import { createCodeWriter } from './writer'
+import { walkObject, isValidKey, getValueType } from './utils'
 
 /**
  * @typedef {object} Options
@@ -17,9 +18,10 @@ function addToQueue(fn) {
 
 async function processQueue() {
   if (queueRunning) {
-    return setTimeout(() => {
+    setTimeout(() => {
       processQueue()
     }, 100)
+    return
   }
   queueRunning = true
   await q.reduce((acc, item) => {
@@ -59,7 +61,7 @@ class Typeable {
   }
 
   setupSource() {
-    this.sourceFile = new CodeWriter()
+    this.sourceFile = createCodeWriter()
 
     this.sourceFile.addInterface({
       name: this.options.rootInterfaceName,
@@ -69,20 +71,23 @@ class Typeable {
 
   proxyHandler() {
     const self = this
+
+    const shouldCreateSubProxy = value =>
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      !(value instanceof Set) &&
+      !(value instanceof Map)
+
     return {
       set(obj, prop, value) {
-        if (typeof value === 'object' && !Array.isArray(value)) {
-          Reflect.set(obj, prop, new Proxy(value, self.proxyHandler()))
-        } else {
-          Reflect.set(...arguments)
-        }
-
         // add to queue
         addToQueue(() => {
           return self.contructTypeTree()
         })
 
-        return true
+        return shouldCreateSubProxy(value)
+          ? Reflect.set(obj, prop, new Proxy(value, self.proxyHandler()))
+          : Reflect.set(...arguments)
       },
     }
   }
@@ -98,44 +103,36 @@ class Typeable {
       if (!isValidKey(key)) {
         return
       }
+
       const propKey = key
-      let parentInterface = sourceFile.getInterface(path.join('_'))
+      const parentIntName = path.join('_')
+      let parentInterface =
+        path.length == 0
+          ? rootInterface
+          : sourceFile.getInterface(parentIntName) ||
+            sourceFile.addInterface({
+              name: parentIntName,
+            })
 
-      if (!parentInterface) {
-        if (path.length == 0) {
-          parentInterface = rootInterface
-        } else {
-          parentInterface = sourceFile.addInterface({
-            name: path.join('_'),
-          })
-        }
-      }
+      let propType = getValueType(value)
 
-      if (typeof value == 'object') {
+      if (!propType) {
         const intName = path.concat(key).join('_')
-        let int = sourceFile.getInterface(intName)
-        if (!int) {
-          int = sourceFile.addInterface({
+        propType = intName
+
+        !sourceFile.getInterface(intName) &&
+          sourceFile.addInterface({
             name: intName,
           })
-        }
-
-        !parentInterface.getProperty(propKey) &&
-          parentInterface.addProperty({
-            name: propKey,
-            type: intName,
-          })
-      } else {
-        !parentInterface.getProperty(propKey) &&
-          parentInterface.addProperty({
-            name: propKey,
-            type:
-              typeof value === 'function'
-                ? '(...args:any[])=>any'
-                : typeof value,
-          })
       }
+
+      !parentInterface.getProperty(propKey) &&
+        parentInterface.addProperty({
+          name: propKey,
+          type: propType,
+        })
     })
+
     await this.syncFile()
   }
 
@@ -156,14 +153,3 @@ class Typeable {
 export const createTypeable = function (obj, options) {
   return new Typeable(obj, options).mutable
 }
-
-function walkObject(obj, handler, path = []) {
-  return Object.keys(obj).forEach(key => {
-    if (typeof obj[key] == 'object') {
-      walkObject(obj[key], handler, path.concat(key))
-    }
-    handler(key, obj[key], path)
-  })
-}
-
-const isValidKey = str => !/[ \-]/g.test(str)
