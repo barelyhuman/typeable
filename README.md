@@ -14,16 +14,21 @@ Install `@barelyhuman/typeable` with npm
 
 ## What and Why
 
-It's a generator for object interfaces. I have a project that I'm working on which has a ton of shared objects
-being defined during development, this makes it hard to keep track of what all was defined on the object.
+It's a generator for object interfaces. I have a project that I'm working on
+which has a ton of shared objects being defined during development, this makes
+it hard to keep track of what all was defined on the object.
 
-Typescript has cross file inference but still doesn't help with dynamically defined properties so this helps generate a declarations file that stores all the properties added to the object. There's definite knick knacks
-that can be fixed.
+Typescript has cross file inference but still doesn't help with dynamically
+defined properties so this helps generate a declarations file that stores all
+the properties added to the object. There's definite knick knacks that can be
+fixed.
 
-> **Note**: This is a subset requirement for one of my packages and **might not** be something you need for
-> your day to day development. The generator's goal is to be able to generate types at runtime while in development.
+> **Note**: This is a subset requirement for one of my packages and **might
+> not** be something you need for your day to day development. The generator's
+> goal is to be able to generate types at runtime while in development.
 
-> **Note**: If the `NODE_ENV` is set to `production`, the type generator will not run.
+> **Note**: If the `NODE_ENV` is set to `production`, the type generator will
+> not run.
 
 ## Usage
 

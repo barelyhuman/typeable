@@ -1,1 +1,1 @@
-export * from "./typeable"
+export * from './typeable'

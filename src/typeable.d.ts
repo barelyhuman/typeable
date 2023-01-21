@@ -1,6 +1,6 @@
-export declare function createTypeable(baseObject: any, options: Options): any;
+export declare function createTypeable(baseObject: any, options: Options): any
 
 export type Options = {
-    outfile: string;
-    rootInterfaceName: string;
-};
+  outfile: string
+  rootInterfaceName: string
+}
