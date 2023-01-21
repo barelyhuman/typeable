@@ -99,6 +99,8 @@ async function syncFile({ outfile, sourceFile }) {
 
 const shouldCreateSubProxy = value =>
   typeof value === 'object' &&
+  value !== null &&
+  value !== undefined &&
   !Array.isArray(value) &&
   !(value instanceof Set) &&
   !(value instanceof Map)

@@ -110,4 +110,26 @@ test('test addition of sub interfaces', async () => {
   })
 })
 
+test('test addition of null props', async () => {
+  const a = createTypeable(
+    {},
+    {
+      outfile: 'test_typeable.d.ts',
+    }
+  )
+
+  a.appNull = null
+  a.appUndef = undefined
+
+  assert.ok(a instanceof Object)
+
+  await onReady(async () => {
+    if (existsSync('test_typeable.d.ts')) {
+      const data = await fs.readFile('test_typeable.d.ts', 'utf8')
+      assert.ok(data.indexOf('appNull: null') > -1)
+      assert.ok(data.indexOf('appUndef: undefined') > -1)
+    }
+  })
+})
+
 test.run()
