@@ -132,4 +132,29 @@ test('test addition of null props', async () => {
   })
 })
 
+test('test addition of function with more than one parameter', async () => {
+  const a = createTypeable(
+    {},
+    {
+      outfile: 'test_typeable.d.ts',
+    }
+  )
+
+  a.app = {}
+  a.app.function = function (arg) {}
+  a.app.function2 = function (arg, arg2) {}
+
+  assert.ok(a instanceof Object)
+
+  await onReady(async () => {
+    if (existsSync('test_typeable.d.ts')) {
+      const data = await fs.readFile('test_typeable.d.ts', 'utf8')
+      assert.ok(data.indexOf('function: (param0: any) => any') > -1)
+      assert.ok(
+        data.indexOf('function2: (param0: any, param1: any) => any') > -1
+      )
+    }
+  })
+})
+
 test.run()
