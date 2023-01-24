@@ -2,7 +2,6 @@ import { test } from 'uvu'
 import { createTypeable } from '../src/index.js'
 import assert from 'uvu/assert'
 import { promises as fs, existsSync } from 'fs'
-import { GENERIC_FUNCTION_DEF } from '../src/utils'
 
 const testOutfile = 'test_typeable.d.ts'
 
@@ -10,10 +9,14 @@ async function onReady(fn) {
   return new Promise(resolve => {
     setTimeout(() => {
       ;(async () => {
-        await fn()
-        resolve()
+        try {
+          await fn()
+          resolve()
+        } catch (err) {
+          throw err
+        }
       })()
-    }, 500)
+    }, 1000)
   })
 }
 
@@ -51,8 +54,14 @@ test('test addition of sub functions and methods', async () => {
       const data = await fs.readFile('test_typeable.d.ts', 'utf8')
 
       assert.ok(data.indexOf('interface app') > -1)
-      assert.ok(data.indexOf(`method: ${GENERIC_FUNCTION_DEF}`) > -1)
-      assert.ok(data.indexOf(`subFunction: ${GENERIC_FUNCTION_DEF}`) > -1)
+      assert.ok(
+        data.indexOf(`method: ${getFunctionParamString(a.app.method)}`) > -1
+      )
+      assert.ok(
+        data.indexOf(
+          `subFunction: ${getFunctionParamString(a.app.subFunction)}`
+        ) > -1
+      )
     }
   })
 })
@@ -105,7 +114,11 @@ test('test addition of sub interfaces', async () => {
       assert.ok(data.indexOf(`app: app`) > -1)
       assert.ok(data.indexOf(`interface app_subInteface`) > -1)
       assert.ok(data.indexOf(`subInteface: app_subInteface`) > -1)
-      assert.ok(data.indexOf(`method: ${GENERIC_FUNCTION_DEF}`) > -1)
+      assert.ok(
+        data.indexOf(
+          `method: ${getFunctionParamString(a.app.subInteface.method)}`
+        ) > -1
+      )
     }
   })
 })
@@ -143,15 +156,28 @@ test('test addition of function with more than one parameter', async () => {
   a.app = {}
   a.app.function = function (arg) {}
   a.app.function2 = function (arg, arg2) {}
+  a.app.function3 = (arg, arg2) => {}
+  a.app.function4 = async (arg, arg2) => {}
 
   assert.ok(a instanceof Object)
 
   await onReady(async () => {
     if (existsSync('test_typeable.d.ts')) {
       const data = await fs.readFile('test_typeable.d.ts', 'utf8')
-      assert.ok(data.indexOf('function: (param0: any) => any') > -1)
       assert.ok(
-        data.indexOf('function2: (param0: any, param1: any) => any') > -1
+        data.indexOf(`function: ${getFunctionParamString(a.app.function)}`) > -1
+      )
+      assert.ok(
+        data.indexOf(`function2: ${getFunctionParamString(a.app.function2)}`) >
+          -1
+      )
+      assert.ok(
+        data.indexOf(`function3: ${getFunctionParamString(a.app.function3)}`) >
+          -1
+      )
+      assert.ok(
+        data.indexOf(`function4: ${getFunctionParamString(a.app.function4)}`) >
+          -1
       )
     }
   })

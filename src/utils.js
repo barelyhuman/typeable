@@ -1,17 +1,5 @@
 const { keys } = Object
 
-export const GENERIC_FUNCTION_DEF = '(...args: any[]) => any'
-export const ARGUMENTATIVE_FUNCTION_DEF = count => {
-  let str = '('
-  for (let i = 0; i < count; i++) {
-    if (count > 1 && i > 0) {
-      str += ', '
-    }
-    str += `param${i}: any`
-  }
-  str += ') => any'
-  return str
-}
 export const GENERIC_MAP_DEF = 'Map<any,any>'
 export const GENERIC_SET_DEF = 'Set<any>'
 export const GENERIC_RECORD_DEF = 'Record<string,any>'
@@ -35,13 +23,7 @@ export const getValueType = value => {
   const isObj = typeof value == 'object'
 
   if (isFunction) {
-    if (value.length) {
-      type = ARGUMENTATIVE_FUNCTION_DEF(value.length)
-      // TODO: add a parser for the string version of the function
-      // to add names of the parameters instead of param0...paramN
-    } else {
-      type = GENERIC_FUNCTION_DEF
-    }
+    type = getFunctionParamString(value)
   } else if (isMapSet) {
     type = value instanceof Map ? GENERIC_MAP_DEF : GENERIC_SET_DEF
   } else if (isObj) {
@@ -55,4 +37,20 @@ export const getValueType = value => {
     else return false
   }
   return type || typeof value
+}
+
+export const getFunctionParamString = func => {
+  let str = '('
+  for (let i = 0; i < func.length; i++) {
+    if (func.length > 1 && i > 0) {
+      str += ', '
+    }
+    str += `param${i}: any`
+  }
+  if (func.constructor.name === 'AsyncFunction') {
+    str += ') => Promise<any>'
+  } else {
+    str += ') => any'
+  }
+  return str
 }
