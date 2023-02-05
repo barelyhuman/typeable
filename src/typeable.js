@@ -48,6 +48,8 @@ export function createTypeable(baseObject, options) {
   return new Proxy(baseObject, proxyHandler)
 }
 
+const replaceInvalidKey = x => (isValidKey(x) && x) || '_'
+
 async function contructTypeTree({
   baseObject,
   rootInterface,
@@ -60,7 +62,7 @@ async function contructTypeTree({
     }
 
     const propKey = key
-    const parentIntName = path.join('_')
+    const parentIntName = path.map(replaceInvalidKey).join('_')
     let parentInterface =
       path.length == 0
         ? rootInterface
@@ -72,7 +74,7 @@ async function contructTypeTree({
     let propType = getValueType(value)
 
     if (!propType) {
-      const intName = path.concat(key).join('_')
+      const intName = path.concat(key).map(replaceInvalidKey).join('_')
       propType = intName
 
       !sourceFile.getInterface(intName) &&

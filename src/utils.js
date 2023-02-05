@@ -18,7 +18,7 @@ export const walkObject = (obj, handler, path = [], walked = new Set()) => {
   })
 }
 
-export const isValidKey = str => !/[ \-]/g.test(str)
+export const isValidKey = str => !/[:\\\/ \-]/g.test(str)
 
 export const getValueType = value => {
   let type = false
