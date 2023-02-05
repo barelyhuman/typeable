@@ -2,23 +2,10 @@ import { test } from 'uvu'
 import { createTypeable } from '../src/index.js'
 import assert from 'uvu/assert'
 import { promises as fs, existsSync } from 'fs'
+import { getFunctionParamString } from '../src/utils'
+import { onReady } from './helpers.js'
 
 const testOutfile = 'test_typeable.d.ts'
-
-async function onReady(fn) {
-  return new Promise(resolve => {
-    setTimeout(() => {
-      ;(async () => {
-        try {
-          await fn()
-          resolve()
-        } catch (err) {
-          throw err
-        }
-      })()
-    }, 1000)
-  })
-}
 
 test.before(async () => {
   await fs.unlink(testOutfile)

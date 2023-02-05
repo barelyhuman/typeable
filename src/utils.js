@@ -4,11 +4,15 @@ export const GENERIC_MAP_DEF = 'Map<any,any>'
 export const GENERIC_SET_DEF = 'Set<any>'
 export const GENERIC_RECORD_DEF = 'Record<string,any>'
 
-export const walkObject = (obj, handler, path = []) => {
+export const walkObject = (obj, handler, path = [], walked = new Set()) => {
   if (obj == null || obj == undefined) return
+  walked.add(obj)
   return keys(obj).forEach(key => {
     if (typeof obj[key] == 'object') {
-      walkObject(obj[key], handler, path.concat(key))
+      if (walked.has(obj[key])) {
+        return
+      }
+      walkObject(obj[key], handler, path.concat(key), walked)
     }
     handler(key, obj[key], path)
   })
